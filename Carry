@@ -1,0 +1,115 @@
+Bond Carry Strategy — Quantpedia / Algorithm Implementation
+
+Main Research Question:
+
+Can a cross-sectional carry strategy—buying high-yielding sovereign bonds and shorting (or avoiding) low-yielding ones—generate sustainable excess returns across countries?
+
+Core Hypothesis:
+Bond yields reflect embedded carry premia: higher nominal yields compensate for duration and currency risk, not purely macro fundamentals.
+
+Mechanism Tested:
+
+Universe: 30 countries’ 10-year government bonds.
+
+Each month:
+
+Sort by nominal yield.
+
+Go long the top 1/3 (highest yielders).
+
+Rebalance monthly with equal weights.
+
+Interpretation:
+This is a global sovereign bond value/carry strategy, analogous to FX carry or equity value factors — exploiting yield differentials as a priced risk premium.
+
+Applications to Credit Trading:
+
+Extend logic to corporate bond spreads: overweight issuers/sectors with higher yield per unit of duration or liquidity risk.
+
+Potential to construct cross-country or sectoral credit carry portfolios using CDS or bond indices.
+
+Carry signals may predict spread compression cycles or default risk premia across regimes.
+
+🌍 II. Faber (2016) — “Finding Yield in a 2% World”
+
+SSRN Link
+
+Main Research Questions:
+
+Can a value-based allocation to global sovereign bonds (selecting based on yield rather than debt weight) outperform traditional capitalization-weighted benchmarks?
+
+In a world of compressed yields, does global diversification and value selection add income and risk-adjusted return?
+
+Key Idea:
+Cap-weighted global bond indices overweight the most indebted countries (issuers with the largest debt stock).
+Faber proposes yield-weighted selection as a form of “bond value investing.”
+
+Findings:
+
+High-yield sovereigns outperform low-yield sovereigns on both absolute and risk-adjusted bases.
+
+Yield-based selection produces higher income and similar volatility, improving Sharpe ratios across multiple decades.
+
+Application to Credit Trading:
+
+The same principle applies within credit universes:
+
+Traditional benchmarks overweight the largest issuers (often riskier, lower-yielding post-spread compression).
+
+A “value” approach reallocating toward higher spread sectors can enhance return per unit of risk.
+
+Use for benchmark redesign — from capitalization-weighted to yield- or spread-weighted credit indices.
+
+📈 III. Ilmanen, Israel, Moskowitz, Thapar, & Wang (2020) — “Factor Premia and Factor Timing: A Century of Evidence”
+
+SSRN Link
+
+Main Research Questions:
+
+Are factor premia (value, momentum, carry, defensive) stable across time, markets, and asset classes?
+
+Can factor premia be timed profitably using macro or valuation indicators?
+
+Findings:
+
+Factor returns persist across 100+ years and six asset classes.
+
+Out-of-sample performance drops ~30% but remains positive — evidence of robustness, not overfitting.
+
+Carry is a persistent return source in bonds, equities, FX, and commodities.
+
+Timing factors (e.g., conditioning on valuation or volatility) rarely adds significant alpha after costs.
+
+Application to Credit Trading:
+
+Validates carry as a cross-asset premium, reinforcing its use in credit spread strategies.
+
+Suggests factor diversification (carry + momentum + defensive) can enhance Sharpe in multi-asset credit portfolios.
+
+Timing the credit carry (e.g., entering when spreads are wide) may work in theory but suffers from implementation friction and lagged data.
+
+🧮 IV. Min & Dong (2024) — “The Drivers of Global Government Bond Returns”
+
+SSRN Link
+
+Main Research Questions:
+
+Do forward rates predict future realized returns across maturities and currencies?
+
+Can a dynamic yield-curve positioning approach (favoring higher forward-rate markets) improve global bond performance?
+
+Findings:
+
+Forward rates are reliable predictors of relative bond performance across maturities and currencies.
+
+Portfolios overweighting higher forward-rate markets earn persistent excess returns.
+
+“Dynamic yield curve selection” enhances return efficiency across regimes and interest rate environments.
+
+Application to Credit Trading:
+
+Replace “forward rates” with credit forward spreads or implied spread term premia to dynamically tilt across credit tenors.
+
+Forward-rate logic can inform curve positioning (front-end vs. long-end spread carry).
+
+Integrates with systematic duration/curve risk overlays for credit portfolios.
