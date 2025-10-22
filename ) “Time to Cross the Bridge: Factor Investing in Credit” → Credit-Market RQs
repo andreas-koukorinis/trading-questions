@@ -1,0 +1,106 @@
+) “Time to Cross the Bridge: Factor Investing in Credit” → Credit-Market RQs
+
+One-line thesis.
+Can equity-style factor timing primitives (risk regime, signal intensity, valuation spread, positioning/crowding) be ported to credit to improve timing of carry, momentum, value, and vol premia in IG/HY ETFs, cash bonds, and CDX?
+
+Hypotheses.
+H1. Conditioning on a risk-sentiment regime (MOVE/VIX/GSI-like) increases out-of-sample IC/Sharpe for credit factors vs unconditional timing.
+H2. Signal intensity (e.g., slope of spread carry, trend strength) and valuation spreads (cheap-expensive buckets) predict forward excess returns in credit similar to equities.
+H3. Positioning/crowding (ETF ownership, dealer inventory, OI in CDX options) explains timing failures and drawdowns.
+
+Universe.
+LQD/VCIT/IGIB, HYG/JNK/SJNK, CDX IG/HY, cash bond baskets by rating/sector/term.
+
+Data.
+OAS levels/changes, TR-excess, ETF NAV vs price (premium/discount), volumes & bid-ask, creations/redemptions, CDX flows, TRACE prints, issuance, dealer inventory (where available), MOVE/VIX, macro surprises.
+
+Signal construction.
+
+Carry (credit): term/carry from curve (OAS kinks) + roll-down; intensity = cross-sectional z of ex-ante carry.
+
+Momentum: 10–60d spread/price trend; strength = regression β & R²; “cheap/expensive momentum” via valuation buckets.
+
+Value: sector/rating-normalized OAS vs fair-value curve; spread percentile.
+
+Vol/liq stress: ETF premium/discount z, bid-ask z, volume surge ratio.
+
+Crowding: ETF ownership shifts, AP activity proxies, CDX OI skew.
+
+Tests.
+Daily sorts (deciles by signal), Q10–Q1 forward TR-excess at 1/5/10/20d; IC & rank-IC; conditional versions by risk regime and valuation quartile; event-filtered windows (rolls, downgrades). Mirror the “scoreboard” style (regime × signal-intensity × valuation × positioning).
+
+Strategy sketch.
+Weekly rebalance; long-only tilt (alloc up-weighting top-quartile signals) and long–short (neutral to credit beta); size ∝ signal × liquidity × 1/vol; hard limits on HY/sector.
+
+Robustness.
+Rolling OOS, MOVE terciles, QE/QT, crisis windows; cost stress (5–20 bps ETFs; TRACE-based for cash); alternative definitions (EMA vs linear, β×R² vs additive), and attribution: how much comes from valuation spread vs signal intensity buckets akin to the paper’s framework.
+
+Success gates.
+OOS Sharpe ↑ ≥0.3 after costs vs baseline; stable IC decay curve; drawdown ≤ benchmark.
+
+2) “Switching Styles” → Regime-Switch Timing for Credit Factors
+
+One-line thesis.
+Can a regime-switching (observable sentiment) allocator improve the timing of credit carry/momentum/value vs time-only allocators? The paper shows Regime-Switch MVO beat alternatives in OOS FX; we port that mechanic to credit.
+
+What to port.
+
+Use a sentiment index (observable, exogenous) and Markov transition among three regimes; allocate styles conditional on regime moments/covariances.
+
+Out-of-sample, RS-MVO had the top Sharpe vs naïve, MinVar, MVSK, and style-momentum; inference: “moments are more regime-dependent than time-dependent.” Test this in credit.
+
+Credit RQs.
+RQ1. Do regime-conditioned means/covariances for (carry, momentum, value, liquidity-stress) in credit outperform unconditional timing?
+RQ2. In which regimes does carry dominate (risk-seeking), momentum protect (risk-aversion), and value stabilize (medium/risk-off) in credit—mirroring the FX findings?
+
+Build the credit sentiment index.
+Inputs analogous to the paper’s mix: VIX/MOVE, IG/HY option-implied vol, IG/HY CDX skew, TED/credit liquidity, bank/insurer stress proxies, ETF premium/discount slope; standardize (rolling quantiles), take PC1 → 3 regimes with Markov transitions.
+
+Design.
+
+Estimate regime-conditional μ, Σ for factor returns (IG carry, HY carry, trend, value, liq-stress).
+
+RS-MVO with risk target; compare to MinVar, MVSK, style-momentum (relative-strength of factors), and equal-weight baselines.
+
+Evaluation.
+OOS (rolling 2015–2019, 2020–2022, 2023–2025): Sharpe/Sortino, Q-spreads, turnover, drawdowns; weight-turnover diagnostics (style-momentum often over-trades; MinVar under-adapts—replicate these contrasts in credit).
+
+Expected pattern to verify in credit.
+Carry excels risk-on; momentum helps risk-off; value more tame/defensive; correlations change by regime (e.g., carry↔momentum turns more negative in stress). Confirm or refute.
+
+3) “Enter SAM + New Pairs” → Live RS Allocator + Pairs for Credit
+
+One-line thesis.
+Operationalize a Style Allocation Model (SAM) for credit that emits weekly weights over (carry, momentum, value) from a Markov regime switcher, and add pairs that exploit cross-asset co-movement (ETF vs macro drivers).
+
+What to port.
+
+SAM bounds style weights (0–⅔ each) and sets them from an observable sentiment index with Markov transitions (productionized in FX). Apply the same loop to credit.
+
+Paper’s pairs add (FX–commodities) links using short-horizon mean-reversion (5-min regressions). In credit, use ETF–macro or ETF–rate pairs.
+
+Credit RQs.
+RQ1. Do weekly SAM weights on (IG carry, HY carry, trend, value) beat static allocations after costs? RQ2. Which pairs (e.g., HYG↔SPX earnings breadth, LQD↔UST term premium, HYG↔WTI for energy-heavy HY) deliver stable reversion alphas?
+
+SAM (credit) build.
+
+Sentiment index (MOVE, VIX, CDX IV, ETF prem/discount, TED, bank CDS).
+
+Regime transitions (3-state Markov).
+
+Weekly weights for factor sleeves; capacity & turnover limits.
+
+Pairs menu (reversion, intraday–multi-day).
+
+HYG vs Crude (energy beta); EMB vs DXY; LQD vs 10y-term premium; HYG vs credit impulse proxy; CDX HY vs SPX (beta-hedged).
+
+5–60min regressions, z-score entry, beta-neutral, trend filter to avoid strong-trend traps (as noted in the SAM note: macro noise can whipsaw low-freq momentum—pairs thrive there).
+
+Evaluation.
+
+SAM: OOS Sharpe, turnover, drawdown, weight-path stability.
+
+Pairs: hit-rate, avg. holding time, slippage vs ADV, stress performance.
+
+Risk.
+Policy shocks → regime flips; de-linking of pairs (monitor half-life, rolling R²); ETF microstructure (AP frictions) during stress.
