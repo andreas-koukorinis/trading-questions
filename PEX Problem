@@ -1,0 +1,2 @@
+Build a production system that converts RFQ flow and bond characteristics into Probability of Execution (PEX) and uses it to price, quote, route, and risk-manage credit trades across single‐CUSIP RFQs, 
+portfolio trades, ETFs vs bonds, and CDS/CDX vs bonds.
