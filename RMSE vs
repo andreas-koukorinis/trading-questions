@@ -1,0 +1,90 @@
+<thinking>
+The user is asking about the connection between RMSE and model improvements for bond quoting models, specifically in the context of algorithmic trading. They want an expert perspective on whether RMSE is a valuable metric or if something more directly connected to PNL like maximum likelihood is needed. Given the user's background as Co-Head of Credit at Optiver with extensive experience in algorithmic trading and credit derivatives, I should provide a technical, nuanced answer.
+
+Key points to address:
+1. The disconnect between RMSE and trading PNL
+2. When RMSE might be useful vs misleading
+3. Better alternatives that connect to economic outcomes
+4. The role of maximum likelihood and its connection to PNL
+5. Practical recommendations for improving the research process
+
+I should frame this from the perspective of someone evaluating research methodologies in algo trading, particularly for bond quoting.
+</thinking>
+
+RMSE is a deeply flawed primary metric for bond quoting models - it's essentially measuring the wrong thing. Let me break down why and what actually matters:
+
+## The Fundamental Disconnect
+
+RMSE treats all prediction errors equally, but in quoting bonds, the economic impact of errors is wildly asymmetric:
+
+1. **Quoted too wide**: You lose flow but don't lose money (opportunity cost)
+2. **Quoted too tight**: You get adversely selected and lose actual money
+3. **Directional misalignment**: Being wrong about direction when volatility spikes costs far more than being wrong in calm markets
+
+A model with lower RMSE could easily have worse PNL if it's consistently tight when it should be wide during adverse selection events.
+
+## Where RMSE Has Limited Value
+
+RMSE can be useful as a **secondary diagnostic** for:
+- Calibration drift detection over time
+- Comparing models within the same loss regime
+- Feature engineering validation (did adding this feature reduce noise?)
+
+But it should never drive decision-making about model deployment.
+
+## Superior Metrics That Connect to PNL
+
+**1. Asymmetric Loss Functions**
+Design your loss function to match your economic reality:
+```
+L = w_adverse * I(executed & adverse) * |error| + w_miss * I(missed & profitable) * |error|
+```
+where w_adverse >> w_miss
+
+**2. Quantile-Based Metrics**
+For quoting, you care about tail behavior:
+- 95th percentile of losses when filled
+- Conditional Value at Risk (CVaR) of your quotes
+- Maximum drawdown under your quoting strategy
+
+**3. Information Ratio of Quote Placement**
+```
+IR = E[PNL per quote] / σ(PNL per quote)
+```
+This directly measures risk-adjusted returns of your quoting decisions.
+
+**4. Probability-Weighted Economic Loss**
+If using maximum likelihood approaches, weight by economic impact:
+```
+Economic_LL = Σ p(fill|quote,market) * PNL(quote,realized_price)
+```
+
+## Maximum Likelihood's Role
+
+ML estimation becomes valuable when you explicitly model:
+1. **Fill probability** as a function of quote placement
+2. **Adverse selection probability** conditional on fill
+3. **Market impact** of your quotes
+
+The key is ensuring your likelihood function reflects the **data generating process of PNL**, not just price movements. A well-specified likelihood that models the fill-or-no-fill decision boundary naturally captures the asymmetry RMSE misses.
+
+## Research Process Improvements
+
+For production quoting models at Optiver, I'd structure evaluation as:
+
+1. **Primary metrics**: Sharpe ratio of quoting strategy, adverse selection rate, capture rate
+2. **Secondary metrics**: Fill rate vs target, quote stability (avoid flickering)
+3. **Diagnostic metrics**: RMSE, MAE, directional accuracy (but never for go/no-go decisions)
+
+The research pipeline should include:
+- Backtesting with realistic fill simulation (not just price prediction)
+- A/B testing framework comparing actual PNL, not statistical metrics
+- Regime-specific evaluation (your model might have great RMSE in calm markets but blow up in stress)
+
+## The Practical Reality
+
+In my experience, the models that win in production often have **worse RMSE** than academic alternatives because they're pessimistic about adverse selection. They quote wider when uncertainty increases, even if the expected mid is well-estimated.
+
+Think of it this way: RMSE optimizes for being a good meteorologist (predicting temperature accurately), but you need to optimize for being a good trader (knowing when to carry an umbrella and when to sell flood insurance).
+
+The research process should reflect this - every model improvement should be validated against economic outcomes, not statistical goodness-of-fit. If you're using RMSE prominently in your research pipeline, you're likely optimizing for publication rather than production.
