@@ -1,0 +1,272 @@
+Here is the **combined unformatted version** of:
+
+* The **Technical Specification for Multi-Factor Corporate Bond Model Data Infrastructure**, and
+* The **Engineering Instructions for Data Inventory, Schema, and Utility Framework Design**
+
+This version is written as a single, cohesive instruction document for engineering implementation, suitable for system architects, data engineers, and platform owners.
+
+---
+
+Technical Specification and Engineering Instructions for Multi-Factor Corporate Bond Model Data Infrastructure
+
+Executive Summary
+
+This document defines the technical design and engineering build instructions for a data infrastructure system supporting advanced multi-factor models targeting US high-yield corporate bonds and US Treasuries. The platform must serve both research and production workflows for signal generation, NAV monitoring, and model training.
+
+1. System Architecture Overview
+
+1.1 Core Components
+
+The system must support:
+
+* Research: flexible data access, factor backtests, PCA, clustering, panel regression
+* Production: daily signal generation and delivery with latency ≤ 1 day
+* Real-time: NAV calculation and monitoring with latency < 100ms
+
+1.2 Technical Stack
+
+* Storage:
+
+  * Time-series DB (e.g., TimescaleDB) for market data
+  * Columnar store (e.g., Parquet, ClickHouse) for factor analysis
+  * PostgreSQL for reference and fundamental data
+
+* Compute:
+
+  * Python for research (NumPy, Pandas, SciPy)
+  * C++ for real-time NAV and pricing
+  * Apache Spark for PCA, clustering, panel regression, batch jobs
+
+2. Data Acquisition and Ingestion
+
+2.1 Feed Integration
+
+* TRACE: build a parser that handles real-time and historical feeds with gap-filling, cancellations, correction support. Use Kafka as buffer, store raw data 90 days, reconcile against FINRA EOD.
+
+* Bloomberg: integrate B-PIPE for real-time, DL for bulk reference, BVAL for pricing. Respect rate limits. Fallback to Terminal API.
+
+* Market Aggregators: connect to MarketAxess, Tradeweb, ICE. Normalize quotes across venues. Build smart aggregation logic.
+
+2.2 Data Validation
+
+Implement 3-tier validation:
+
+* Completeness: missing updates, staleness, gap detection
+* Consistency: cross-source price checks, sanity rules (e.g. spreads < 10,000bps)
+* Accuracy: compare derived vs vendor numbers, reconcile price fields
+
+Use Airflow for orchestration, store validation logs, expose data quality dashboard.
+
+3. Data Storage Architecture
+
+3.1 Time-Series Design
+
+* Partition by date and liquidity tier
+* Compress with columnar format
+* Retain full tick data 30 days, roll to 5m bars after
+* Indexes: (cusip, timestamp), (issuer, date), (sector, date), bitmap on rating
+
+Performance targets:
+
+* Single bond history (1y): < 100ms
+* Universe snapshot (3000 bonds): < 500ms
+* Full factor calc: < 30s
+
+3.2 Analytical Warehouse
+
+* Use dimensional model:
+
+  * Fact tables: daily bond observations, monthly factors
+  * Dimension tables: bonds, issuers, sectors, clusters
+  * Pre-aggregated tables for sector/rating/time rollups
+
+* Schema guidelines:
+
+  * Wide, denormalized tables
+  * Column families per factor type
+  * Separate schemas for research and production
+
+* Materialized views:
+
+  * Precompute factor scores and rolling stats
+  * Cache PCA outputs
+  * Incremental updates where possible
+
+4. Data Processing Pipeline
+
+4.1 Real-time NAV Engine
+
+* Implement in C++
+* Shared memory for pricing cache
+* Multi-threaded, sub-100ms latency
+* Pricing waterfall: recent trade > quote > BVAL > model
+* Apply exponential liquidity decay (λ = 0.02)
+* Publish to Redis + Kafka, persist to DB
+
+4.2 Factor Calculation Framework
+
+* PCA:
+
+  * Rolling window, resampled starts
+  * Sector/duration universes
+  * Store loadings, exposures
+
+* Clustering:
+
+  * HCA with Ward’s linkage
+  * Parallel distance matrix
+  * Stability metrics
+
+* Panel Regression:
+
+  * LASSO + stepwise
+  * Multiple horizons (1w, 1m, 3m, 1y)
+  * Save Rsq and residuals
+
+* ML (N-LASR):
+
+  * AdaBoost model
+  * Monthly retrain
+  * Rank-based features
+  * Sector/size/beta neutralization
+  * A/B testing support
+
+4.3 Signal Generation
+
+* Align daily, monthly, quarterly data
+
+* Handle missing via fill/omit logic
+
+* Factor construction:
+
+  * Momentum (1M, 3M, 6M, 12M)
+  * Value (spread – fair value)
+  * Carry (OAS + curve adjustment)
+  * Quality (multi-metric composite)
+  * Sentiment (volatility-based)
+
+* Signal aggregation:
+
+  * Z-score normalize
+  * Sector/beta neutralize
+  * RAMIC weighting
+  * Threshold triggers (e.g., |z| > 2)
+
+5. API and Access Layer
+
+5.1 Python API for Research
+
+* get_prices()
+* get_spreads()
+* get_fundamentals()
+* get_factors()
+* get_returns()
+* calculate_factors()
+
+Design:
+
+* Configurable fill, frequency
+* As-of joins for alignment
+* Flag data quality
+* Cache frequent queries
+
+5.2 C++ API for Production
+
+* subscribe_prices()
+* get_snapshot()
+* calculate_nav()
+
+Performance:
+
+* Snapshot latency < 5ms
+* NAV calc < 100ms
+* Memory budget < 10GB
+
+6. Data Quality Monitoring
+
+6.1 Metrics
+
+* Coverage: % bonds updated daily, stale count
+* Accuracy: cross-source diff, spread validation, residual drift
+* Timeliness: ingest latency, pipeline delay, SLA tracking
+
+6.2 Audit & Lineage
+
+* Record:
+
+  * Source system
+  * All transformations
+  * Method versions
+  * Manual overrides
+* Store history of corrections
+* Provide regulatory trails (e.g., TRACE, MiFID)
+
+7. Performance and Scaling
+
+7.1 Latency Targets
+
+| Component    | Target | Max   |
+| ------------ | ------ | ----- |
+| Price ingest | 10ms   | 50ms  |
+| NAV calc     | 50ms   | 100ms |
+| Factor calc  | 30s    | 60s   |
+| Signal gen   | 60s    | 120s  |
+
+7.2 Throughput
+
+* 10M+ price updates/day
+* 100K+ NAVs/day
+* 50K+ factors/day
+* Handle 10x spikes under stress
+
+8. Disaster Recovery
+
+* Real-time replication
+* Snapshots: daily (30d), weekly (1y)
+* RPO: 1h, RTO: 4h
+* Monthly restore tests
+* HA: redundant feeds, failover clusters, health monitoring
+
+9. Security and Compliance
+
+* AES-256 at rest, TLS 1.3 in transit
+* RBAC, audit logs, access reviews
+* TRACE, MiFID II, GDPR, SOC 2 compliant
+* Data governance, PII masking, retention policies
+
+10. Implementation Instructions
+
+Phase 1 (0–3 months):
+
+* Build TRACE & BPIPE ingestion
+* Set up PostgreSQL + TimescaleDB + Parquet store
+* Basic validation and Python API
+
+Phase 2 (3–6 months):
+
+* PCA, clustering, panel regression
+* Deploy factor engine
+* Build quality monitoring + metrics
+
+Phase 3 (6–9 months):
+
+* C++ NAV engine
+* Signal generation + thresholds
+* C++ API + production scheduler
+
+Phase 4 (9–12 months):
+
+* Performance optimization
+* Disaster recovery drills
+* ML integration for N-LASR
+* Final production cutover
+
+Success Criteria:
+
+* Daily refresh of 10,000+ bonds under 2h
+* NAV latency < 100ms
+* Signal generation complete < 1h after EOD
+* 99.9% data availability
+* Supports ≥10 concurrent researchers
+
+End of specification. Let me know if you need this as a docx, LaTeX, or YAML template.
